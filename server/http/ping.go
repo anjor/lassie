@@ -1,9 +1,16 @@
 package httpserver
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+)
 
 func pingHandler(res http.ResponseWriter, req *http.Request) {
-	log.Info("request received at /ping")
+	printer := NewHandlerPrinterWithWriter(os.Stdout)
+	printer.PrintPath(req)
+
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.Write([]byte("pong"))
+
+	printer.PrintStatus(req, http.StatusOK)
 }

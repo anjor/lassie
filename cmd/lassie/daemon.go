@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	httpserver "github.com/filecoin-project/lassie/server/http"
 	"github.com/urfave/cli/v2"
@@ -15,6 +16,12 @@ var daemonFlags = []cli.Flag{
 		Value:       "127.0.0.1",
 		DefaultText: "127.0.0.1",
 		EnvVars:     []string{"LASSIE_ADDRESS"},
+	},
+	&cli.PathFlag{
+		Name:    "output",
+		Aliases: []string{"o"},
+		Usage:   "a filepath to save the daemon output to",
+		EnvVars: []string{"LASSIE_OUTPUT"},
 	},
 	&cli.UintFlag{
 		Name:        "port",
@@ -39,7 +46,19 @@ var daemonCmd = &cli.Command{
 func daemonCommand(cctx *cli.Context) error {
 	address := cctx.String("address")
 	port := cctx.Uint("port")
-	httpServer, err := httpserver.NewHttpServer(cctx.Context, address, port)
+
+	// write to output file if provided
+	handlerWriter := os.Stdout
+	if cctx.Path("output") != "" {
+		filepath := cctx.Path("output")
+		file, err := os.Create(filepath)
+		if err != nil {
+			return err
+		}
+		handlerWriter = file
+	}
+
+	httpServer, err := httpserver.NewHttpServer(cctx.Context, address, port, handlerWriter)
 	if err != nil {
 		log.Errorw("failed to create http server", "err", err)
 		return err

@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -21,7 +22,7 @@ type HttpServer struct {
 	server   *http.Server
 }
 
-func NewHttpServer(ctx context.Context, address string, port uint) (*HttpServer, error) {
+func NewHttpServer(ctx context.Context, address string, port uint, handlerWriter io.Writer) (*HttpServer, error) {
 	addr := fmt.Sprintf("%s:%d", address, port)
 	listener, err := net.Listen("tcp", addr) // assigns a port if port is 0
 	if err != nil {
@@ -33,7 +34,7 @@ func NewHttpServer(ctx context.Context, address string, port uint) (*HttpServer,
 	// create server
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:        fmt.Sprintf(":%d", port),
+		Addr:        addr,
 		BaseContext: func(listener net.Listener) context.Context { return ctx },
 		Handler:     mux,
 	}
@@ -55,7 +56,7 @@ func NewHttpServer(ctx context.Context, address string, port uint) (*HttpServer,
 
 	// Routes
 	mux.HandleFunc("/ping", pingHandler)
-	mux.HandleFunc("/ipfs/", ipfsHandler(lassie))
+	mux.HandleFunc("/ipfs/", ipfsHandler(lassie, handlerWriter))
 
 	return httpServer, nil
 }
